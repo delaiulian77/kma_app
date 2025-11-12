@@ -50,16 +50,16 @@ def test_upload_to_drive():
     media = MediaIoBaseUpload(bio, mimetype="text/plain", resumable=False)
 
     file_metadata = {
-        "name": file_name,
-        "parents": [folder_id],
+    "name": "example.txt",
+    "parents": [st.secrets["app"]["drive_folder_id"]]
     }
-
-    created = drive.files().create(
+    drive.files().create(
         body=file_metadata,
         media_body=media,
-        fields="id, webViewLink"
+        fields="id, webViewLink",
+        supportsAllDrives=False   # personal account → set False
     ).execute()
-
+    
     return created.get("webViewLink", "(no link returned)")
 
 
