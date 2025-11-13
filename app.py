@@ -39,27 +39,40 @@ def test_write_to_sheet():
 def test_upload_to_drive():
     """Upload a small text file to your Drive 'reports' folder."""
     creds = _gcp_creds()
-    folder_id = st.secrets["app"]["drive_folder_id"]
-
     drive = build("drive", "v3", credentials=creds)
 
+    folder_id = st.secrets["app"]["drive_folder_id"].strip()
+
+    # 1) Sanity check: can the service account see the folder?
+    try:
+        folder_meta = drive.files().get(
+            fileId=folder_id,
+            fields="id, name, mimeType, owners"
+        ).execute()
+    except Exception as e:
+        raise RuntimeError(
+            f"Service account cannot access folder '{folder_id}'. "
+            f"Check sharing and the ID. Underlying error: {e}"
+        )
+
+    # 2) Prepare content
     content = f"Hello from KMA diagnostics!\nTimestamp: {datetime.now()}\n"
     bio = BytesIO(content.encode("utf-8"))
-
-    file_name = f"diag_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     media = MediaIoBaseUpload(bio, mimetype="text/plain", resumable=False)
 
     file_metadata = {
-    "name": "example.txt",
-    "parents": [st.secrets["app"]["drive_folder_id"]]
+        "name": f"diag_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+        "parents": [folder_id],
     }
-    drive.files().create(
+
+    # 3) Create the file *in the folder*
+    created = drive.files().create(
         body=file_metadata,
         media_body=media,
-        fields="id, webViewLink",
-        supportsAllDrives=False   # personal account → set False
+        fields="id, webViewLink"
+        # do NOT set supportsAllDrives here for a personal My Drive folder
     ).execute()
-    
+
     return created.get("webViewLink", "(no link returned)")
 
 
