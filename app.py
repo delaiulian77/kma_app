@@ -411,7 +411,7 @@ elif st.session_state.step == 4:
 
                 # --- actions ---
    
-    c1, c2, c3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
 
         if c1.button("Tilbage"):
             st.session_state.step = 3
